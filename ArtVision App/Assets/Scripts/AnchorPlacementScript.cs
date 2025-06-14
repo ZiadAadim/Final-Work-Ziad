@@ -29,7 +29,8 @@ public class AnchorPlacementScript : MonoBehaviour
 
     [SerializeField] private GameObject courseDrawingPrefab;
     [SerializeField] private GameObject referencesPanel;
-    [SerializeField] private GameObject summaryPanel;
+    [SerializeField] private List<GameObject> summaryPanels = new List<GameObject>();
+
     [Header("Course Management")]
     [SerializeField] private List<GameObject> currentCoursePrefabs; // List of prefabs for the active course
     private bool courseStarted = false;
@@ -234,13 +235,17 @@ GameObject prefabToSpawn = selectedDrawingPrefab;
         selectedDrawingChanged = true;
     }
 
-    public void StartCourse(List<GameObject> coursePrefabs, GameObject referencesPanel, GameObject summaryPanel)
+    public void StartCourse(List<GameObject> coursePrefabs, GameObject referencesPanel)
     {
         if (referencesPanel != null)
             referencesPanel.SetActive(false);
 
-        if (summaryPanel != null)
-            summaryPanel.SetActive(false);
+        foreach (GameObject panel in summaryPanels)
+      {
+        if (panel != null)
+             panel.SetActive(false);
+      }
+
 
         if (stopButton != null)
             stopButton.SetActive(true);
@@ -312,17 +317,17 @@ GameObject prefabToSpawn = selectedDrawingPrefab;
 
     public void StartHeadFrontCourse()
     {
-        StartCourse(headFrontCoursePrefabs, referencesPanel, summaryPanel);
+        StartCourse(headFrontCoursePrefabs, referencesPanel);
     }
 
     public void StartHeadSideCourse()
     {
-        StartCourse(headSideCoursePrefabs, referencesPanel, summaryPanel);
+        StartCourse(headSideCoursePrefabs, referencesPanel);
     }
 
     public void StartHeadQuarterCourse()
     {
-        StartCourse(headQuarterCoursePrefabs, referencesPanel, summaryPanel);
+        StartCourse(headQuarterCoursePrefabs, referencesPanel);
     }
     
     public void StopCourse()
@@ -335,8 +340,6 @@ GameObject prefabToSpawn = selectedDrawingPrefab;
     if (referencesPanel != null)
         referencesPanel.SetActive(true);
 
-    if (summaryPanel != null)
-        summaryPanel.SetActive(true);
 
     // Reset course state
     courseStarted = false;

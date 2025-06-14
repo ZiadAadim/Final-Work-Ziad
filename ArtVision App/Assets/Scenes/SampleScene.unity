@@ -45585,7 +45585,9 @@ MonoBehaviour:
   pageAnchorRight: {fileID: 1446137538}
   courseDrawingPrefab: {fileID: 0}
   referencesPanel: {fileID: 677893849}
-  summaryPanel: {fileID: 1108784759}
+  summaryPanels:
+  - {fileID: 788376398}
+  - {fileID: 2136748465}
   currentCoursePrefabs: []
   headFrontCoursePrefabs:
   - {fileID: 540584928298900013, guid: b55d7489c80555e47be13d489c6ed26c, type: 3}
