@@ -40,7 +40,13 @@ public class AnchorPlacementScript : MonoBehaviour
     [SerializeField] private List<GameObject> headFrontCoursePrefabs;
     [SerializeField] private List<GameObject> headSideCoursePrefabs;
     [SerializeField] private List<GameObject> headQuarterCoursePrefabs;
-    [SerializeField] private GameObject stopButton;
+    [SerializeField] private List<GameObject> headBackCoursePrefabs;
+    [SerializeField] private GameObject CourseCanvas;
+
+    [Header("Course UI")]
+    [SerializeField] private TMPro.TextMeshProUGUI courseNameText;
+    [SerializeField] private TMPro.TextMeshProUGUI stepCounterText;
+
 
 void Update()
 {
@@ -235,20 +241,17 @@ GameObject prefabToSpawn = selectedDrawingPrefab;
         selectedDrawingChanged = true;
     }
 
-    public void StartCourse(List<GameObject> coursePrefabs, GameObject referencesPanel)
+    public void StartCourse(List<GameObject> coursePrefabs, GameObject referencesPanel, string courseName)
     {
         if (referencesPanel != null)
             referencesPanel.SetActive(false);
 
         foreach (GameObject panel in summaryPanels)
-      {
-        if (panel != null)
-             panel.SetActive(false);
-      }
+            if (panel != null)
+                panel.SetActive(false);
 
-
-        if (stopButton != null)
-            stopButton.SetActive(true);
+        if (CourseCanvas != null)
+            CourseCanvas.SetActive(true);
 
         currentCoursePrefabs = new List<GameObject>(coursePrefabs);
         currentStepIndex = 0;
@@ -258,7 +261,21 @@ GameObject prefabToSpawn = selectedDrawingPrefab;
         {
             selectedDrawingPrefab = currentCoursePrefabs[currentStepIndex];
         }
+
+        // UPDATE UI
+        if (courseNameText != null)
+            courseNameText.text = courseName;
+
+        UpdateStepCounter();
     }
+
+private void UpdateStepCounter()
+{
+    if (stepCounterText != null && currentCoursePrefabs.Count > 0)
+    {
+        stepCounterText.text = $"{currentStepIndex + 1}/{currentCoursePrefabs.Count}";
+    }
+}
 
     private void SwapToCurrentStepPrefab()
     {
@@ -303,6 +320,7 @@ GameObject prefabToSpawn = selectedDrawingPrefab;
         currentStepIndex = Mathf.Min(currentStepIndex + 1, currentCoursePrefabs.Count - 1);
         selectedDrawingPrefab = currentCoursePrefabs[currentStepIndex];
         SwapToCurrentStepPrefab();
+        UpdateStepCounter();
     }
 
     private void PreviousStep()
@@ -312,47 +330,53 @@ GameObject prefabToSpawn = selectedDrawingPrefab;
         currentStepIndex = Mathf.Max(currentStepIndex - 1, 0);
         selectedDrawingPrefab = currentCoursePrefabs[currentStepIndex];
         SwapToCurrentStepPrefab();
+        UpdateStepCounter();
     }
 
 
     public void StartHeadFrontCourse()
     {
-        StartCourse(headFrontCoursePrefabs, referencesPanel);
+        StartCourse(headFrontCoursePrefabs, referencesPanel, "Front Face");
     }
 
     public void StartHeadSideCourse()
     {
-        StartCourse(headSideCoursePrefabs, referencesPanel);
+        StartCourse(headSideCoursePrefabs, referencesPanel, "Side Face");
     }
 
     public void StartHeadQuarterCourse()
     {
-        StartCourse(headQuarterCoursePrefabs, referencesPanel);
+        StartCourse(headQuarterCoursePrefabs, referencesPanel, "Quarter Face");
+    }
+    
+        public void StartHeadBackCourse()
+    {
+        StartCourse(headBackCoursePrefabs, referencesPanel, "Back Face");
     }
     
     public void StopCourse()
-{
-    // Hide stop button
-    if (stopButton != null)
-        stopButton.SetActive(false);
-
-    // Reactivate panels
-    if (referencesPanel != null)
-        referencesPanel.SetActive(true);
-
-
-    // Reset course state
-    courseStarted = false;
-    currentCoursePrefabs.Clear();
-    currentStepIndex = 0;
-
-    // Remove current anchor if desired
-    if (currentAnchor != null)
     {
-        Destroy(currentAnchor);
-        currentAnchor = null;
+        // Hide stop button
+        if (CourseCanvas != null)
+            CourseCanvas.SetActive(false);
+
+        // Reactivate panels
+        if (referencesPanel != null)
+            referencesPanel.SetActive(true);
+
+
+        // Reset course state
+        courseStarted = false;
+        currentCoursePrefabs.Clear();
+        currentStepIndex = 0;
+
+        // Remove current anchor if desired
+        if (currentAnchor != null)
+        {
+            Destroy(currentAnchor);
+            currentAnchor = null;
+        }
     }
-}
 
 
 
