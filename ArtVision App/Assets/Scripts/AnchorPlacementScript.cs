@@ -313,7 +313,7 @@ private void UpdateStepCounter()
         }
     }
 
-    private void NextStep()
+    public void NextStep()
     {
         if (!courseStarted || currentCoursePrefabs.Count == 0) return;
 
@@ -323,7 +323,7 @@ private void UpdateStepCounter()
         UpdateStepCounter();
     }
 
-    private void PreviousStep()
+    public void PreviousStep()
     {
         if (!courseStarted || currentCoursePrefabs.Count == 0) return;
 
