@@ -47,125 +47,133 @@ public class AnchorPlacementScript : MonoBehaviour
     [SerializeField] private TMPro.TextMeshProUGUI courseNameText;
     [SerializeField] private TMPro.TextMeshProUGUI stepCounterText;
 
+    [Header("Music")]
+    [SerializeField] private AudioSource musicSource;   // drag the AudioSource on SFXManager
+    [SerializeField] private AudioClip defaultMusic;    // the track that plays at app launch
+    [SerializeField] private AudioClip headFrontMusic;
+    [SerializeField] private AudioClip headSideMusic;
+    [SerializeField] private AudioClip headQuarterMusic;
+    [SerializeField] private AudioClip headBackMusic;
 
-void Update()
-{
-    // Drawing placement - ONLY if a course is active
-    if (courseStarted)
+
+    void Update()
     {
-        if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.RTouch))
-            CreateSpatialAnchor(pageAnchorRight);
+        // Drawing placement - ONLY if a course is active
+        if (courseStarted)
+        {
+            if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.RTouch))
+                CreateSpatialAnchor(pageAnchorRight);
 
-        if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.LTouch))
-            CreateSpatialAnchor(pageAnchorLeft);
+            if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.LTouch))
+                CreateSpatialAnchor(pageAnchorLeft);
+        }
+
+        // Toggle drawing visibility
+        if (OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, OVRInput.Controller.RTouch) ||
+        OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, OVRInput.Controller.LTouch))
+        {
+            ToggleDrawing();
+        }
+
+        // Movement and scaling
+        if (currentAnchor != null)
+        {
+            HandleMovement();
+            HandleScaling();
+        }
+
+        if (courseStarted)
+        {
+            if (OVRInput.GetDown(OVRInput.Button.PrimaryThumbstickRight, OVRInput.Controller.RTouch) ||
+            OVRInput.GetDown(OVRInput.Button.PrimaryThumbstickRight, OVRInput.Controller.LTouch))
+            {
+                NextStep();
+            }
+
+            if (OVRInput.GetDown(OVRInput.Button.PrimaryThumbstickLeft, OVRInput.Controller.RTouch) ||
+                OVRInput.GetDown(OVRInput.Button.PrimaryThumbstickLeft, OVRInput.Controller.LTouch))
+            {
+                PreviousStep();
+            }
+        }
     }
 
-    // Toggle drawing visibility
-    if (OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, OVRInput.Controller.RTouch) ||
-    OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, OVRInput.Controller.LTouch))
+
+    private void HandleMovement()
     {
-        ToggleDrawing();
+        if (OVRInput.GetDown(OVRInput.Button.One, OVRInput.Controller.RTouch))
+        {
+            isMoving = true;
+            moveStartPos = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch);
+            anchorStartPos = currentAnchor.transform.position;
+        }
+        else if (OVRInput.GetDown(OVRInput.Button.One, OVRInput.Controller.LTouch))
+        {
+            isMoving = true;
+            moveStartPos = OVRInput.GetLocalControllerPosition(OVRInput.Controller.LTouch);
+            anchorStartPos = currentAnchor.transform.position;
+        }
+
+        if (OVRInput.GetUp(OVRInput.Button.One, OVRInput.Controller.RTouch) ||
+            OVRInput.GetUp(OVRInput.Button.One, OVRInput.Controller.LTouch))
+        {
+            isMoving = false;
+        }
+
+        if (isMoving)
+        {
+            // Use the most recent hand that started movement
+            OVRInput.Controller activeController = OVRInput.Get(OVRInput.Button.One, OVRInput.Controller.RTouch) ?
+                                                   OVRInput.Controller.RTouch : OVRInput.Controller.LTouch;
+
+            Vector3 currentPos = OVRInput.GetLocalControllerPosition(activeController);
+            Vector3 delta = currentPos - moveStartPos;
+            Vector3 worldDelta = Camera.main.transform.TransformDirection(delta);
+            currentAnchor.transform.position = anchorStartPos + worldDelta;
+        }
     }
 
-    // Movement and scaling
-    if (currentAnchor != null)
+    private void HandleScaling()
     {
-        HandleMovement();
-        HandleScaling();
+        // Handle Button.Two from both controllers
+        bool isButtonTwoDown = OVRInput.GetDown(OVRInput.Button.Two, OVRInput.Controller.RTouch) ||
+                               OVRInput.GetDown(OVRInput.Button.Two, OVRInput.Controller.LTouch);
+        bool isButtonTwoUp = OVRInput.GetUp(OVRInput.Button.Two, OVRInput.Controller.RTouch) ||
+                             OVRInput.GetUp(OVRInput.Button.Two, OVRInput.Controller.LTouch);
+
+        if (isButtonTwoDown)
+        {
+            isScaling = true;
+
+            // Prefer right hand for scale origin, fallback to left
+            if (OVRInput.GetDown(OVRInput.Button.Two, OVRInput.Controller.RTouch))
+                scaleStartY = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch).y;
+            else
+                scaleStartY = OVRInput.GetLocalControllerPosition(OVRInput.Controller.LTouch).y;
+
+            anchorStartScale = currentAnchor.transform.localScale;
+        }
+
+        if (isButtonTwoUp)
+            isScaling = false;
+
+        if (isScaling)
+        {
+            float currentY = 0;
+
+            // Use whichever controller is still scaling
+            if (OVRInput.Get(OVRInput.Button.Two, OVRInput.Controller.RTouch))
+                currentY = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch).y;
+            else if (OVRInput.Get(OVRInput.Button.Two, OVRInput.Controller.LTouch))
+                currentY = OVRInput.GetLocalControllerPosition(OVRInput.Controller.LTouch).y;
+
+            float deltaY = currentY - scaleStartY;
+            float sensitivity = 2f;
+            float scaleFactor = 1 + deltaY * sensitivity;
+            scaleFactor = Mathf.Clamp(scaleFactor, 0.2f, 5f);
+            currentAnchor.transform.localScale = anchorStartScale * scaleFactor;
+        }
     }
-
-    if (courseStarted)
-    {
-        if (OVRInput.GetDown(OVRInput.Button.PrimaryThumbstickRight, OVRInput.Controller.RTouch) ||
-        OVRInput.GetDown(OVRInput.Button.PrimaryThumbstickRight, OVRInput.Controller.LTouch))
-    {
-        NextStep();
-    }
-
-    if (OVRInput.GetDown(OVRInput.Button.PrimaryThumbstickLeft, OVRInput.Controller.RTouch) ||
-        OVRInput.GetDown(OVRInput.Button.PrimaryThumbstickLeft, OVRInput.Controller.LTouch))
-    {
-        PreviousStep();
-    }
-    }
-}
-
-
-private void HandleMovement()
-{
-    if (OVRInput.GetDown(OVRInput.Button.One, OVRInput.Controller.RTouch))
-    {
-        isMoving = true;
-        moveStartPos = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch);
-        anchorStartPos = currentAnchor.transform.position;
-    }
-    else if (OVRInput.GetDown(OVRInput.Button.One, OVRInput.Controller.LTouch))
-    {
-        isMoving = true;
-        moveStartPos = OVRInput.GetLocalControllerPosition(OVRInput.Controller.LTouch);
-        anchorStartPos = currentAnchor.transform.position;
-    }
-
-    if (OVRInput.GetUp(OVRInput.Button.One, OVRInput.Controller.RTouch) ||
-        OVRInput.GetUp(OVRInput.Button.One, OVRInput.Controller.LTouch))
-    {
-        isMoving = false;
-    }
-
-    if (isMoving)
-    {
-        // Use the most recent hand that started movement
-        OVRInput.Controller activeController = OVRInput.Get(OVRInput.Button.One, OVRInput.Controller.RTouch) ? 
-                                               OVRInput.Controller.RTouch : OVRInput.Controller.LTouch;
-
-        Vector3 currentPos = OVRInput.GetLocalControllerPosition(activeController);
-        Vector3 delta = currentPos - moveStartPos;
-        Vector3 worldDelta = Camera.main.transform.TransformDirection(delta);
-        currentAnchor.transform.position = anchorStartPos + worldDelta;
-    }
-}
-
-private void HandleScaling()
-{
-    // Handle Button.Two from both controllers
-    bool isButtonTwoDown = OVRInput.GetDown(OVRInput.Button.Two, OVRInput.Controller.RTouch) ||
-                           OVRInput.GetDown(OVRInput.Button.Two, OVRInput.Controller.LTouch);
-    bool isButtonTwoUp = OVRInput.GetUp(OVRInput.Button.Two, OVRInput.Controller.RTouch) ||
-                         OVRInput.GetUp(OVRInput.Button.Two, OVRInput.Controller.LTouch);
-
-    if (isButtonTwoDown)
-    {
-        isScaling = true;
-
-        // Prefer right hand for scale origin, fallback to left
-        if (OVRInput.GetDown(OVRInput.Button.Two, OVRInput.Controller.RTouch))
-            scaleStartY = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch).y;
-        else
-            scaleStartY = OVRInput.GetLocalControllerPosition(OVRInput.Controller.LTouch).y;
-
-        anchorStartScale = currentAnchor.transform.localScale;
-    }
-
-    if (isButtonTwoUp)
-        isScaling = false;
-
-    if (isScaling)
-    {
-        float currentY = 0;
-
-        // Use whichever controller is still scaling
-        if (OVRInput.Get(OVRInput.Button.Two, OVRInput.Controller.RTouch))
-            currentY = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch).y;
-        else if (OVRInput.Get(OVRInput.Button.Two, OVRInput.Controller.LTouch))
-            currentY = OVRInput.GetLocalControllerPosition(OVRInput.Controller.LTouch).y;
-
-        float deltaY = currentY - scaleStartY;
-        float sensitivity = 2f;
-        float scaleFactor = 1 + deltaY * sensitivity;
-        scaleFactor = Mathf.Clamp(scaleFactor, 0.2f, 5f);
-        currentAnchor.transform.localScale = anchorStartScale * scaleFactor;
-    }
-}
 
     public void CreateSpatialAnchor(Transform targetAnchor)
     {
@@ -184,12 +192,12 @@ private void HandleScaling()
         }
 
         if (selectedDrawingPrefab == null)
-{
-    Debug.LogWarning("No selected drawing prefab assigned!");
-    return;
-}
-GameObject prefabToSpawn = selectedDrawingPrefab;
- 
+        {
+            Debug.LogWarning("No selected drawing prefab assigned!");
+            return;
+        }
+        GameObject prefabToSpawn = selectedDrawingPrefab;
+
         Quaternion originalRotation = targetAnchor.rotation;
         Quaternion flatRotation = Quaternion.Euler(0, originalRotation.eulerAngles.y, 0);
 
@@ -241,7 +249,7 @@ GameObject prefabToSpawn = selectedDrawingPrefab;
         selectedDrawingChanged = true;
     }
 
-    public void StartCourse(List<GameObject> coursePrefabs, GameObject referencesPanel, string courseName)
+    public void StartCourse(List<GameObject> coursePrefabs, GameObject referencesPanel, string courseName, AudioClip courseClip)
     {
         if (referencesPanel != null)
             referencesPanel.SetActive(false);
@@ -262,6 +270,14 @@ GameObject prefabToSpawn = selectedDrawingPrefab;
             selectedDrawingPrefab = currentCoursePrefabs[currentStepIndex];
         }
 
+        if (musicSource != null && courseClip != null)
+        {
+            musicSource.Stop();
+            musicSource.clip = courseClip;
+            musicSource.loop = true;      // most BG loops; keep if desired
+            musicSource.Play();
+        }
+
         // UPDATE UI
         if (courseNameText != null)
             courseNameText.text = courseName;
@@ -269,13 +285,13 @@ GameObject prefabToSpawn = selectedDrawingPrefab;
         UpdateStepCounter();
     }
 
-private void UpdateStepCounter()
-{
-    if (stepCounterText != null && currentCoursePrefabs.Count > 0)
+    private void UpdateStepCounter()
     {
-        stepCounterText.text = $"{currentStepIndex + 1}/{currentCoursePrefabs.Count}";
+        if (stepCounterText != null && currentCoursePrefabs.Count > 0)
+        {
+            stepCounterText.text = $"{currentStepIndex + 1}/{currentCoursePrefabs.Count}";
+        }
     }
-}
 
     private void SwapToCurrentStepPrefab()
     {
@@ -336,24 +352,25 @@ private void UpdateStepCounter()
 
     public void StartHeadFrontCourse()
     {
-        StartCourse(headFrontCoursePrefabs, referencesPanel, "Front Face");
+        StartCourse(headFrontCoursePrefabs, referencesPanel, "Front Face", headFrontMusic);
     }
 
     public void StartHeadSideCourse()
     {
-        StartCourse(headSideCoursePrefabs, referencesPanel, "Side Face");
+        StartCourse(headSideCoursePrefabs, referencesPanel, "Side Face", headSideMusic);
     }
 
     public void StartHeadQuarterCourse()
     {
-        StartCourse(headQuarterCoursePrefabs, referencesPanel, "Quarter Face");
+        StartCourse(headQuarterCoursePrefabs, referencesPanel, "Quarter Face", headQuarterMusic);
     }
-    
-        public void StartHeadBackCourse()
+
+    public void StartHeadBackCourse()
     {
-        StartCourse(headBackCoursePrefabs, referencesPanel, "Back Face");
+        StartCourse(headBackCoursePrefabs, referencesPanel, "Back Face", headBackMusic);
     }
-    
+
+
     public void StopCourse()
     {
         // Hide stop button
@@ -376,7 +393,18 @@ private void UpdateStepCounter()
             Destroy(currentAnchor);
             currentAnchor = null;
         }
+
+            // 🔊 restore default music
+    if (musicSource != null && defaultMusic != null)
+    {
+        musicSource.Stop();
+        musicSource.clip = defaultMusic;
+        musicSource.loop = true;
+        musicSource.Play();
     }
+    }
+    
+    
 
 
 

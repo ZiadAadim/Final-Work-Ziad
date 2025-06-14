@@ -46528,6 +46528,12 @@ MonoBehaviour:
   CourseCanvas: {fileID: 1484371902}
   courseNameText: {fileID: 1999052354}
   stepCounterText: {fileID: 1224752371}
+  musicSource: {fileID: 1196942654}
+  defaultMusic: {fileID: 8300000, guid: 62b7bd1b9ca504d4c9ce94cd79c11c6e, type: 3}
+  headFrontMusic: {fileID: 8300000, guid: 390c6ad1f12326546bc4162d7ec313be, type: 3}
+  headSideMusic: {fileID: 0}
+  headQuarterMusic: {fileID: 0}
+  headBackMusic: {fileID: 0}
 --- !u!4 &1964602099
 Transform:
   m_ObjectHideFlags: 0
