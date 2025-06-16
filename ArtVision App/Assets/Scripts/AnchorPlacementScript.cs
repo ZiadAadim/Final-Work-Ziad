@@ -41,11 +41,26 @@ public class AnchorPlacementScript : MonoBehaviour
     [SerializeField] private List<GameObject> headSideCoursePrefabs;
     [SerializeField] private List<GameObject> headQuarterCoursePrefabs;
     [SerializeField] private List<GameObject> headBackCoursePrefabs;
+    [SerializeField] private List<GameObject> torsoFrontCoursePrefabs;
+    [SerializeField] private List<GameObject> torsoQuarterCoursePrefabs;
+    [SerializeField] private List<GameObject> torsoSideCoursePrefabs;
     [SerializeField] private GameObject CourseCanvas;
 
     [Header("Course UI")]
     [SerializeField] private TMPro.TextMeshProUGUI courseNameText;
     [SerializeField] private TMPro.TextMeshProUGUI stepCounterText;
+    [SerializeField] private TMPro.TextMeshProUGUI stepExplanationText;
+    [SerializeField] private List<string> currentCourseExplanations = new List<string>();
+    [SerializeField] private List<string> headFrontExplanations;
+    [SerializeField] private List<string> headSideExplanations;
+    [SerializeField] private List<string> headQuarterExplanations;
+    [SerializeField] private List<string> headBackExplanations;
+    [SerializeField] private List<string> torsoFrontExplanations;
+    [SerializeField] private List<string> torsoQuarterExplanations;
+    [SerializeField] private List<string> torsoSideExplanations;
+
+
+
 
     [Header("Music")]
     [SerializeField] private AudioSource musicSource;   // drag the AudioSource on SFXManager
@@ -54,6 +69,14 @@ public class AnchorPlacementScript : MonoBehaviour
     [SerializeField] private AudioClip headSideMusic;
     [SerializeField] private AudioClip headQuarterMusic;
     [SerializeField] private AudioClip headBackMusic;
+    [SerializeField] private AudioClip torsoFrontMusic;
+    [SerializeField] private AudioClip torsoQuarterMusic;
+    [SerializeField] private AudioClip torsoSideMusic;
+
+    [Header("Reference Canvases")]
+    [SerializeField] private List<GameObject> referencePanels = new List<GameObject>(); // put ALL canvases here
+    private GameObject previousReferencePanel;  // runtime only – don’t expose in Inspector
+
 
 
     void Update()
@@ -249,10 +272,24 @@ public class AnchorPlacementScript : MonoBehaviour
         selectedDrawingChanged = true;
     }
 
-    public void StartCourse(List<GameObject> coursePrefabs, GameObject referencesPanel, string courseName, AudioClip courseClip)
+    public void StartCourse(List<GameObject> coursePrefabs, List<string> courseExplanations, GameObject referencePanel, string courseName, AudioClip courseClip)
     {
-        if (referencesPanel != null)
-            referencesPanel.SetActive(false);
+
+            /* ---------- remember what was showing before ---------- */
+    previousReferencePanel = null;
+    foreach (GameObject panel in referencePanels)
+        if (panel != null && panel.activeSelf)
+            previousReferencePanel = panel; 
+
+                /* ---------- hide every panel except the chosen one ----- */
+    foreach (GameObject panel in referencePanels)
+        if (panel != null && panel != referencePanel)
+            panel.SetActive(false);
+            
+
+    // make sure the chosen panel is ON
+    if (referencePanel != null)
+        referencePanel.SetActive(true);
 
         foreach (GameObject panel in summaryPanels)
             if (panel != null)
@@ -281,8 +318,13 @@ public class AnchorPlacementScript : MonoBehaviour
         // UPDATE UI
         if (courseNameText != null)
             courseNameText.text = courseName;
-
+        // UPDATE TEXT EXPLANATION
+        currentCoursePrefabs = new List<GameObject>(coursePrefabs);
+        currentCourseExplanations = new List<string>(courseExplanations);
+        
+        UpdateStepExplanation();
         UpdateStepCounter();
+        
     }
 
     private void UpdateStepCounter()
@@ -292,6 +334,15 @@ public class AnchorPlacementScript : MonoBehaviour
             stepCounterText.text = $"{currentStepIndex + 1}/{currentCoursePrefabs.Count}";
         }
     }
+
+    private void UpdateStepExplanation()
+{
+    if (stepExplanationText != null && currentCourseExplanations.Count > currentStepIndex)
+    {
+        stepExplanationText.text = currentCourseExplanations[currentStepIndex];
+    }
+}
+
 
     private void SwapToCurrentStepPrefab()
     {
@@ -337,6 +388,7 @@ public class AnchorPlacementScript : MonoBehaviour
         selectedDrawingPrefab = currentCoursePrefabs[currentStepIndex];
         SwapToCurrentStepPrefab();
         UpdateStepCounter();
+        UpdateStepExplanation();
     }
 
     public void PreviousStep()
@@ -347,62 +399,79 @@ public class AnchorPlacementScript : MonoBehaviour
         selectedDrawingPrefab = currentCoursePrefabs[currentStepIndex];
         SwapToCurrentStepPrefab();
         UpdateStepCounter();
+        UpdateStepExplanation();
     }
 
 
     public void StartHeadFrontCourse()
     {
-        StartCourse(headFrontCoursePrefabs, referencesPanel, "Front Face", headFrontMusic);
+        StartCourse(headFrontCoursePrefabs, headFrontExplanations, referencesPanel, "Front Face", headFrontMusic);
     }
 
     public void StartHeadSideCourse()
     {
-        StartCourse(headSideCoursePrefabs, referencesPanel, "Side Face", headSideMusic);
+        StartCourse(headSideCoursePrefabs, headSideExplanations, referencesPanel, "Side Face", headSideMusic);
     }
 
     public void StartHeadQuarterCourse()
     {
-        StartCourse(headQuarterCoursePrefabs, referencesPanel, "Quarter Face", headQuarterMusic);
+        StartCourse(headQuarterCoursePrefabs, headQuarterExplanations, referencesPanel, "Quarter Face", headQuarterMusic);
     }
 
     public void StartHeadBackCourse()
     {
-        StartCourse(headBackCoursePrefabs, referencesPanel, "Back Face", headBackMusic);
+        StartCourse(headBackCoursePrefabs, headBackExplanations, referencesPanel, "Back Face", headBackMusic);
+    }
+    
+        public void StartTorsoFrontCourse()
+    {
+        StartCourse(torsoFrontCoursePrefabs, torsoFrontExplanations, referencesPanel, "Torso Front", torsoFrontMusic);
+    }
+
+            public void StartTorsoQuarterCourse()
+    {
+        StartCourse(torsoQuarterCoursePrefabs, torsoQuarterExplanations, referencesPanel, "Torso 3/4", torsoQuarterMusic);
+    }
+
+            public void StartTorsoSideCourse()
+    {
+        StartCourse(torsoSideCoursePrefabs, torsoSideExplanations, referencesPanel, "Torso Side", torsoSideMusic);
     }
 
 
     public void StopCourse()
+{
+    /* ---------- hide the panel used during the course ------- */
+    foreach (GameObject panel in referencePanels)
+        if (panel != null)
+            panel.SetActive(false);
+
+    /* ---------- restore the one that was visible before ------ */
+    if (previousReferencePanel != null)
+        previousReferencePanel.SetActive(true);
+
+    /* ---------- your existing cleanup ------------------------ */
+    if (CourseCanvas) CourseCanvas.SetActive(false);
+
+    courseStarted = false;
+    currentCoursePrefabs.Clear();
+    currentStepIndex = 0;
+
+    if (currentAnchor)
     {
-        // Hide stop button
-        if (CourseCanvas != null)
-            CourseCanvas.SetActive(false);
+        Destroy(currentAnchor);
+        currentAnchor = null;
+    }
 
-        // Reactivate panels
-        if (referencesPanel != null)
-            referencesPanel.SetActive(true);
-
-
-        // Reset course state
-        courseStarted = false;
-        currentCoursePrefabs.Clear();
-        currentStepIndex = 0;
-
-        // Remove current anchor if desired
-        if (currentAnchor != null)
-        {
-            Destroy(currentAnchor);
-            currentAnchor = null;
-        }
-
-            // 🔊 restore default music
-    if (musicSource != null && defaultMusic != null)
+    if (musicSource && defaultMusic)
     {
         musicSource.Stop();
         musicSource.clip = defaultMusic;
         musicSource.loop = true;
         musicSource.Play();
     }
-    }
+}
+
     
     
 
